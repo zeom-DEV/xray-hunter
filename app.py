@@ -12,7 +12,7 @@ st.markdown("""
     .stTextInput>div>div>input { background-color: #1a1c23; color: white; border: 1px solid #3e4451; }
     .stButton>button { 
         background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%); 
-        color: white; border: none; padding: 12px; font-size: 18px; font-weight: bold;
+        color: white; border: none; padding: 12px; font-size: 18px; font-weight: bold; width: 100%;
     }
     .stButton>button:hover { box-shadow: 0 0 20px rgba(0, 160, 220, 0.6); transform: translateY(-2px); }
     </style>
@@ -39,23 +39,30 @@ with c2:
 
 # --- Logique de Résilience ---
 def build_ultimate_query(role, must_have, location, mode, region, provider):
-    # Gestion du domaine
-    domain = "linkedin.com/in/"
-    if region == "Tunisie (.tn)": domain = "tn.linkedin.com/in/"
-    elif region == "France (.fr)": domain = "fr.linkedin.com/in/"
-    
-    # Base de la requête
-    query = f'site:{domain} "{role}"'
+    # Gestion intelligente du domaine selon le mode
+    if mode == "Expert Tech (GitHub/Stack)":
+        domain = "github.com"
+        query = f'site:{domain} "{role}"'
+    else:
+        domain = "linkedin.com/in/"
+        if region == "Tunisie (.tn)": domain = "tn.linkedin.com/in/"
+        elif region == "France (.fr)": domain = "fr.linkedin.com/in/"
+        query = f'site:{domain} "{role}"'
     
     if location: query += f' "{location}"'
     if must_have: query += f' "{must_have}"'
     
-    # Mode Email Hunter (Puissance maximale pour les missions 10 jours)
+    # Mode Email Hunter optimisé
     if mode == "Deep Search (Email Hunter)" and provider:
-        email_string = " OR ".join([f'"{p.lower()}@gmail.com"' if p == "Gmail" else f'"{p.lower()}@outlook.com"' for p in provider])
+        p_list = []
+        for p in provider:
+            if p == "Gmail": p_list.append('"@gmail.com"')
+            elif p == "Outlook": p_list.append('"@outlook.com"')
+            else: p_list.append('"@*"') # Pour Pro (Domaine)
+        email_string = " OR ".join(p_list)
         query += f' ({email_string})'
         
-    # Nettoyage automatique des résultats "Bruit" (Mises à jour 2026)
+    # Nettoyage automatique des jobboards
     query += ' -intitle:job -intitle:recrutement -inurl:jobs -inurl:posts'
     
     return query
@@ -65,7 +72,7 @@ if st.button("⚡ EXTRAIRE LES MEILLEURS PROFILS"):
     if role:
         final_query = build_ultimate_query(role, must_have, location, mode, region, provider)
         
-        # Sécurité : Ajout de paramètres pour simuler une recherche naturelle
+        # Sécurité : Paramètres Google
         tbs = "&tbs=qdr:y" if freshness else ""
         encoded_query = urllib.parse.quote(final_query)
         search_url = f"https://www.google.com/search?q={encoded_query}{tbs}"
@@ -81,11 +88,10 @@ if st.button("⚡ EXTRAIRE LES MEILLEURS PROFILS"):
             </a>
             """, unsafe_allow_html=True)
         
-        # Tips de Moez (Contextualisés avec ton CV)
-        [span_1](start_span)st.info(f"💡 **Conseil de Moez Thabet :** Pour un recrutement urgent, priorisez les profils ayant 'Gmail' dans leur description, ce sont les plus réactifs[span_1](end_span).")
+        st.info(f"💡 **Conseil de Moez Thabet :** Pour un recrutement urgent, priorisez les profils ayant 'Gmail' dans leur description, ce sont les plus réactifs.")
     else:
         st.error("L'intitulé du poste est obligatoire pour calibrer l'outil.")
 
 st.divider()
 st.caption(f"Système de protection contre les mises à jour LinkedIn activé. Dernière synchronisation : {datetime.now().strftime('%d/%m/%Y %H:%M')}")
-  
+        
