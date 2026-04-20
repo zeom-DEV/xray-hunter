@@ -1,66 +1,73 @@
 import streamlit as st
 import urllib.parse
+from datetime import datetime
 
-st.set_page_config(page_title="Moez Thabet | OSINT Industrial", page_icon="🏗️", layout="wide")
+st.set_page_config(page_title="Moez Thabet | The Kraken V11", page_icon="🐙", layout="wide")
 
-# Style "Command Center"
+# Design "Cyber-Recruiter"
 st.markdown("""
     <style>
-    .stApp { background-color: #0b0e14; color: #00ff41; font-family: 'Courier New', Courier, monospace; }
-    .stButton>button { background: #00ff41; color: black; font-weight: bold; border: none; height: 3em; width: 100%; }
-    .stTextInput>div>div>input { background-color: #161b22; color: #00ff41; border: 1px solid #00ff41; }
-    .status { border: 1px solid #00ff41; padding: 15px; border-radius: 5px; background: #0d1117; }
+    .stApp { background-color: #000500; color: #00FF41; }
+    .stButton>button { 
+        background: #00FF41; color: black; border-radius: 0; font-weight: bold; height: 4em; border: 2px solid #fff;
+    }
+    .stTextInput>div>div>input { background-color: #050505; color: #00FF41; border: 1px solid #00FF41; }
+    .kraken-box { border: 3px double #00FF41; padding: 20px; background: #001100; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🏗️ SOURCING INDUSTRIAL V9.0")
-st.write("**Opérateur : Moez Thabet** | Extraction de données brutes")
+st.title("🐙 THE KRAKEN V11.0 - DEEP SOURCING")
+st.write("**Directeur d'Opération : Moez Thabet** | Extraction hors-réseaux")
 
 col1, col2 = st.columns(2)
 with col1:
-    job = st.text_input("🎯 Poste précis", placeholder="ex: Chef d'équipe BTP")
-    loc = st.text_input("📍 Secteur (Ville/Dept)", placeholder="ex: Guéret OR Creuse")
+    job = st.text_input("🎯 Métier (ex: Chef d'équipe)", placeholder="Cible")
+    loc = st.text_input("📍 Zone (ex: Guéret OR Creuse)", placeholder="Localisation")
 with col2:
-    target = st.selectbox("🎯 Cible de donnée", [
-        "Leaking d'Emails (LinkedIn)", 
-        "Téléchargement Direct CV (PDF)", 
-        "Numéros de Téléphone (Public)",
-        "Annuaires Professionnels"
+    method = st.selectbox("🚀 Méthode d'Infiltration", [
+        "DATABASE : Fichiers Excel/Membres (xls/csv)", 
+        "BYPASS : CV Indeed & France Travail",
+        "LEAK : Listes d'entreprises & Annuaire Pro",
+        "SOCIAL : Profils avec Mobile Direct"
     ])
 
-def build_pro_dork(job, loc, target):
-    # Élargissement automatique pour les petites villes comme Guéret
-    location_query = f'("{loc}")' if loc else ""
+def build_kraken_query(job, loc, method):
+    area = f'("{loc}")' if loc else ""
     
-    if target == "Leaking d'Emails (LinkedIn)":
-        return f'site:linkedin.com/in/ "{job}" {location_query} ("@gmail.com" OR "@outlook.com" OR "@wanadoo.fr" OR "@orange.fr")'
+    if "Excel" in method:
+        # Cherche des listes de contacts, des annuaires d'adhérents ou des tableaux de bord
+        return f'filetype:xlsx OR filetype:csv "{job}" {area} (contact OR email OR tel OR portable)'
     
-    elif target == "Téléchargement Direct CV (PDF)":
-        # On évite les formulaires vides en forçant des mots-clés d'expérience
-        return f'filetype:pdf "{job}" {location_query} (Expérience OR "Parcours professionnel") -intitle:formulaire -intitle:modèle'
+    elif "Indeed" in method:
+        # Bypass Indeed pour voir les CV sans payer le compte recruteur
+        return f'site:indeed.fr/resume "{job}" {area} -inurl:login -inurl:search'
     
-    elif target == "Numéros de Téléphone (Public)":
-        return f'site:linkedin.com/in/ "{job}" {location_query} ("06" OR "07" OR "+336" OR "+337")'
+    elif "Annuaire" in method:
+        # Cherche dans les annuaires spécialisés (BTP, Industrie) et les listes de membres
+        return f'intitle:"liste des" OR intitle:"annuaire" "{job}" {area} (BTP OR Industrie)'
     
-    else: # Annuaires
-        return f'("{job}" AND "{loc}") (annuaire OR "liste des membres" OR "trombinoscope")'
+    else: # Social Mobile
+        return f'site:linkedin.com/in/ "{job}" {area} ("06" OR "07" OR "@gmail.com")'
 
-if st.button("LANCER L'EXTRACTION"):
+if st.button("LANCER L'ASPI-DONNÉES"):
     if job:
-        query = build_pro_dork(job, loc, target)
+        query = build_kraken_query(job, loc, method)
         url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
         
         st.markdown(f"""
-            <div class="status">
-                <p>🚀 <b>Requête OSINT générée :</b></p>
+            <div class="kraken-box">
+                <p>⚡ <b>Séquence d'attaque générée :</b></p>
                 <code>{query}</code>
                 <br><br>
                 <a href="{url}" target="_blank" style="text-decoration:none;">
-                    <button style="width:100%; background:#00ff41; color:black; padding:15px; border:none; cursor:pointer; font-weight:bold;">
-                        DÉVERROUILLER LES DONNÉES SUR GOOGLE
+                    <button style="width:100%; cursor:pointer;">
+                        DÉPLOYER LE KRAKEN SUR GOOGLE
                     </button>
                 </a>
             </div>
         """, unsafe_allow_html=True)
     else:
-        st.error("Le poste est obligatoire.")
+        st.error("Précise la cible.")
+
+st.divider()
+st.caption(f"Système de Sourcing Révolutionnaire - Moez Thabet Edition - {datetime.now().year}")
