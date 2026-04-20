@@ -1,99 +1,88 @@
 import streamlit as st
-import dns.resolver
-import smtplib
-import socket
+import urllib.parse
+import re
 
 # Configuration de la page
-st.set_page_config(page_title="Quantum SMTP | Moez Thabet", page_icon="⚡", layout="centered")
+st.set_page_config(page_title="Moez Thabet | The Quantum V17.2", page_icon="🧬", layout="wide")
 
-# Style CSS Custom pour garder l'ambiance "Quantum"
+# Style CSS Custom
 st.markdown("""
     <style>
     .stApp { background-color: #000; color: #00FF41; }
     .stTextInput>div>div>input { background-color: #050505; color: #00FF41; border: 1px solid #00FF41; }
-    div[data-testid="stButton"] > button { 
+    /* Stylisation du nouveau bouton natif Streamlit */
+    div[data-testid="stLinkButton"] > a { 
         background-color: #00FF41 !important; 
         color: black !important; 
         font-weight: bold; 
         width: 100%; 
         border: none; 
+        text-align: center; 
     }
-    .result-box { border: 1px solid #333; padding: 15px; border-radius: 5px; background-color: #111; margin-top: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚡ QUANTUM SMTP VALIDATOR")
-st.write("**Architecte : Moez Thabet** | Validation d'emails B2B sans base de données")
+st.title("🧬 THE QUANTUM V17.2 - SOURCING DASHBOARD")
+st.write("**Architecte Système : Moez Thabet** | Recherche de CVs (X-Ray Search)")
 
-st.info("💡 **Comment ça marche ?** L'outil génère les combinaisons d'emails possibles et interroge directement le serveur de l'entreprise (Ping SMTP) pour savoir laquelle est réelle, sans envoyer de message.")
+# 1. CORRECTION ARCHITECTURE : Gestion de l'état pour ne pas perdre l'affichage
+if 'scan_active' not in st.session_state:
+    st.session_state.scan_active = False
 
-# Interface utilisateur
-col1, col2 = st.columns(2)
-with col1:
-    prenom = st.text_input("👤 Prénom", placeholder="Ex: Jean").strip().lower()
-    nom = st.text_input("👤 Nom", placeholder="Ex: Dupont").strip().lower()
-with col2:
-    domaine = st.text_input("🏢 Domaine entreprise", placeholder="Ex: decathlon.com").strip().lower()
+c1, c2 = st.columns([2, 1])
+with c1:
+    job = st.text_input("🎯 Métier (ex: Chef d'équipe OR Superviseur)", value="Chef d'équipe")
+    loc = st.text_input("📍 Zone (ex: Guéret OR Creuse OR 23000)", value="Guéret OR Creuse OR 23000")
+with c2:
+    st.info("💡 **Correction :** Conservation de l'affichage (Session State) et optimisation X-Ray pour extraire les vrais CVs.")
 
-def generate_patterns(p, n, d):
-    """Génère les combinaisons d'emails B2B les plus courantes"""
-    return [
-        f"{p}.{n}@{d}",
-        f"{p[0]}{n}@{d}",
-        f"{p}{n[0]}@{d}",
-        f"{p}@{d}",
-        f"{n}@{d}",
-        f"{p}_{n}@{d}"
-    ]
+def clean_input(text):
+    # 2. CORRECTION SYNTAXE : Enlève les espaces en trop qui causaient les "0 résultats"
+    text = text.strip()
+    text = re.sub(r'\s+', ' ', text)
+    return text
 
-def verify_email(email):
-    """Fait un Ping SMTP pour vérifier si l'adresse existe"""
-    try:
-        name, domain = email.split('@')
-        # 1. Chercher le serveur mail
-        records = dns.resolver.resolve(domain, 'MX')
-        mx_record = str(records[0].exchange)
-        
-        # 2. Se connecter au serveur (Timeout de 3s pour ne pas bloquer)
-        server = smtplib.SMTP(timeout=3)
-        server.set_debuglevel(0)
-        server.connect(mx_record)
-        server.helo(socket.getfqdn())
-        server.mail('contact@ton-domaine.com')
-        
-        # 3. Poser la question
-        code, message = server.rcpt(str(email))
-        server.quit()
-        
-        if code == 250:
-            return True, f"✅ VALIDE : **{email}**"
-        else:
-            return False, f"❌ Rejeté (Code {code}) : {email}"
-            
-    except smtplib.SMTPConnectError:
-         return False, f"⚠️ Connexion SMTP bloquée (Le serveur refuse le ping) : {email}"
-    except Exception as e:
-        return False, f"⚠️ Erreur ou Timeout sur : {email}"
-
-if st.button("LANCER LE SCAN (PING SERVEUR)"):
-    if prenom and nom and domaine:
-        with st.spinner("Analyse DNS et Ping des serveurs en cours..."):
-            emails_to_test = generate_patterns(prenom, nom, domaine)
-            
-            st.write("### 📊 Résultats du Scan :")
-            success_found = False
-            
-            # Tester chaque email généré
-            for email in emails_to_test:
-                is_valid, message = verify_email(email)
-                if is_valid:
-                    st.success(message)
-                    success_found = True
-                    break # On arrête dès qu'on trouve le bon !
-                else:
-                    st.write(message)
-            
-            if not success_found:
-                st.warning("Aucune adresse valide trouvée. Le serveur est peut-être protégé (Catch-all) ou le port de scan est bloqué par l'hébergeur.")
+# Déclencheur du scan
+if st.button("DÉPLOYER LE SCAN MULTI-NIVEAUX", use_container_width=True):
+    if job and loc:
+        st.session_state.scan_active = True
     else:
-        st.error("Veuillez remplir tous les champs (Prénom, Nom, Domaine).")
+        st.error("Veuillez remplir les champs Métier et Zone.")
+
+# Affichage persistant après le clic
+if st.session_state.scan_active:
+    j = clean_input(job)
+    l = clean_input(loc)
+    
+    # --- LOGIQUE D'EXTRACTION OPTIMISÉE ---
+    
+    # LE MINER (La solution pour les CVs : PDF, Titre = CV, Exclusion des offres)
+    q_miner = f'filetype:pdf (intitle:cv OR intitle:resume OR intitle:curriculum) ({j}) ({l}) -offre -emploi -template -modele'
+    
+    # LE SCOUT (Pour voir tout le monde sur LinkedIn sans bloquer sur l'email)
+    q_scout = f'site:linkedin.com/in/ ({j}) ({l}) -intitle:offres -inurl:jobs'
+
+    # LE SNIPER (Emails directs : à n'utiliser que sur les grandes villes)
+    q_sniper = f'site:linkedin.com/in/ ({j}) ({l}) ("@gmail.com" OR "@orange.fr" OR "@yahoo.fr")'
+
+    # 3. CORRECTION UI : Création des onglets
+    tab1, tab2, tab3 = st.tabs(["📄 MINER (Les CVs PDF)", "🔍 SCOUT (LinkedIn Large)", "🎯 SNIPER (Emails)"])
+    
+    with tab1:
+        st.subheader("La solution infaillible pour les CVs ciblés")
+        st.write("Force Google à ne lire que les titres de fichiers PDF, en excluant les templates payants et les annonces Pôle Emploi.")
+        # Utilisation de st.link_button au lieu de balises HTML dangereuses
+        st.link_button("LANCER LE SCAN MINER", f"https://www.google.com/search?q={urllib.parse.quote(q_miner)}")
+        st.code(q_miner, language="text")
+
+    with tab2:
+        st.subheader("Bassin de candidats global")
+        st.write("Affiche tous les profils de la zone géographique sans imposer de restriction d'adresse mail.")
+        st.link_button("LANCER LE SCAN SCOUT", f"https://www.google.com/search?q={urllib.parse.quote(q_scout)}")
+        st.code(q_scout, language="text")
+
+    with tab3:
+        st.subheader("Contact direct (Attention : Villes Denses uniquement)")
+        st.write("Cherche publiquement les emails. Les résultats seront souvent à zéro dans les villes moyennes.")
+        st.link_button("LANCER LE SCAN SNIPER", f"https://www.google.com/search?q={urllib.parse.quote(q_sniper)}")
+        st.code(q_sniper, language="text")
