@@ -1,88 +1,63 @@
 import streamlit as st
 import urllib.parse
-from datetime import datetime
 
-# Configuration Ultra-Premium
-st.set_page_config(page_title="Moez Thabet | OSINT Sourcing Machine", page_icon="🕵️‍♂️", layout="wide")
+st.set_page_config(page_title="Moez Thabet | Sourcing Pro", page_icon="⚡", layout="wide")
 
-# UI Styling (Dark Gold & Professional)
+# Style Ultra-Rapide
 st.markdown("""
     <style>
-    .stApp { background-color: #0e1117; color: #ffffff; }
-    .stButton>button { 
-        background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%); 
-        color: black; border: none; padding: 15px; font-weight: bold; width: 100%; border-radius: 10px;
-    }
-    .result-box { background-color: #1a1c23; padding: 20px; border-radius: 15px; border-left: 5px solid #ffd700; }
+    .stApp { background-color: #111; color: #fff; }
+    .stButton>button { background: #ff4b4b; color: white; width: 100%; font-weight: bold; height: 3.5em; border-radius: 8px; }
+    .stTextInput>div>div>input { background-color: #222; color: #fff; border: 1px solid #444; }
+    .res-box { background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #ff4b4b; margin-top: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ OSINT Sourcing Machine v6.0")
-st.write(f"**Expert Système : Moez Thabet** | Stratégie d'extraction de données réelles (CV & Mail)")
+st.title("⚡ Moteur de Sourcing de Choc")
+st.write("**Développé par Moez Thabet** | Objectif : Zéro résultat vide.")
 
-# --- Sidebar Configuration ---
-with st.sidebar:
-    st.header("🎯 Objectif de Recherche")
-    target_type = st.radio("Que cherchez-vous ?", ["Direct CV (PDF/Docs)", "LinkedIn + Public Mail", "GitHub Tech Leads"])
-    freshness = st.toggle("Profils récents (2025-2026)", value=True)
+col1, col2 = st.columns(2)
+with col1:
+    job = st.text_input("🎯 Quel métier ?", placeholder="ex: Chef d'équipe")
+    loc = st.text_input("📍 Quelle zone ?", placeholder="ex: Guéret, Creuse")
+with col2:
+    skills = st.text_input("🔑 Compétence clé", placeholder="ex: BTP")
+    method = st.radio("Stratégie", ["Contact Direct (Mail/Tel)", "Recherche de CV PDF", "LinkedIn Global"])
 
-# --- Inputs ---
-c1, c2 = st.columns(2)
-with c1:
-    role = st.text_input("🎯 Poste (ex: Développeur, Commercial)", placeholder="Indispensable")
-    location = st.text_input("📍 Ville / Pays", placeholder="ex: Tunis, France")
-with c2:
-    keywords = st.text_input("🔑 Mots-clés / Compétences", placeholder="ex: Python, B2B, Sales")
-    provider = st.multiselect("📧 Domaines Email (si LinkedIn)", ["gmail.com", "outlook.com", "proton.me", "yahoo.fr"])
-
-# --- Logic Engine ---
-def build_concrete_query(role, location, keywords, target_type, provider):
-    query = ""
+def build_fail_safe_query(job, loc, skills, method):
+    # Logique de base souple
+    base = f'"{job}"'
+    if loc: base += f' {loc}'
+    if skills: base += f' "{skills}"'
     
-    if target_type == "Direct CV (PDF/Docs)":
-        # Cherche directement des fichiers PDF/DOCX indexés par Google (Vrais CVs)
-        query = f'(intitle:resume OR intitle:cv OR intitle:curriculum) filetype:pdf "{role}"'
-        if location: query += f' "{location}"'
-        if keywords: query += f' "{keywords}"'
-        
-    elif target_type == "LinkedIn + Public Mail":
-        # Force Google à trouver des mails écrits dans la bio ou le post
-        email_str = " OR ".join([f'"{p}"' for p in provider]) if provider else '"@gmail.com"'
-        query = f'site:linkedin.com/in/ "{role}"'
-        if location: query += f' "{location}"'
-        if keywords: query += f' "{keywords}"'
-        query += f' ({email_str}) -inurl:jobs -intitle:recrutement'
-        
-    elif target_type == "GitHub Tech Leads":
-        # Cherche les mails dans les fichiers README ou profils GitHub
-        query = f'site:github.com "{role}" "{location}" "@gmail.com"'
+    if method == "Contact Direct (Mail/Tel)":
+        # On force Google à trouver des textes qui ressemblent à des coordonnées
+        return f'site:linkedin.com/in/ {base} ("@gmail.com" OR "@outlook.com" OR "06" OR "07")'
     
-    return query
+    elif method == "Recherche de CV PDF":
+        # On cherche des CVs mais on n'est pas trop strict sur le titre
+        return f'filetype:pdf {base} (CV OR Resume OR Curriculum)'
+    
+    else:
+        # LinkedIn standard mais sans les pollutions de pubs
+        return f'site:linkedin.com/in/ {base} -intitle:offres -inurl:jobs'
 
-# --- Execution ---
-if st.button("🚀 LANCER L'EXTRACTION DE DONNÉES"):
-    if role:
-        final_query = build_concrete_query(role, location, keywords, target_type, provider)
-        tbs = "&tbs=qdr:y" if freshness else ""
-        search_url = f"https://www.google.com/search?q={urllib.parse.quote(final_query)}{tbs}"
-        
-        st.markdown(f'<div class="result-box">', unsafe_allow_html=True)
-        st.info("✅ Stratégie d'extraction générée avec succès.")
-        st.code(final_query)
+if st.button("LANCER LA RECHERCHE MAINTENANT"):
+    if job:
+        final_query = build_fail_safe_query(job, loc, skills, method)
+        url = f"https://www.google.com/search?q={urllib.parse.quote(final_query)}"
         
         st.markdown(f"""
-            <a href="{search_url}" target="_blank" style="text-decoration:none;">
-                <div style="background-color:#ffd700; color:black; padding:18px; text-align:center; border-radius:8px; font-weight:bold; font-size:1.2em;">
-                    ACCÉDER AUX DOCUMENTS ET EMAILS RÉELS
-                </div>
-            </a>
-            """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.warning("💡 **Note :** Si vous cherchez des CVs, les résultats Google seront des liens de téléchargement direct PDF.")
+            <div class="res-box">
+                <p style="color:#ff4b4b; font-weight:bold;">✅ Requête optimisée générée :</p>
+                <code>{final_query}</code>
+                <br><br>
+                <a href="{url}" target="_blank" style="text-decoration:none;">
+                    <button style="width:100%; background:#28a745; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:1.1em;">
+                        CLIQUE ICI POUR VOIR LES RÉSULTATS SUR GOOGLE
+                    </button>
+                </a>
+            </div>
+        """, unsafe_allow_html=True)
     else:
-        st.error("L'intitulé du poste est obligatoire.")
-
-st.divider()
-st.caption(f"Propulsé par la technologie OSINT - Moez Thabet © {datetime.now().year}")
-    
+        st.error("Indique au moins un métier.")
