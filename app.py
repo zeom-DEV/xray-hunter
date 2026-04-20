@@ -1,53 +1,99 @@
+import streamlit as st
 import dns.resolver
 import smtplib
 import socket
 
+# Configuration de la page
+st.set_page_config(page_title="Quantum SMTP | Moez Thabet", page_icon="⚡", layout="centered")
+
+# Style CSS Custom pour garder l'ambiance "Quantum"
+st.markdown("""
+    <style>
+    .stApp { background-color: #000; color: #00FF41; }
+    .stTextInput>div>div>input { background-color: #050505; color: #00FF41; border: 1px solid #00FF41; }
+    div[data-testid="stButton"] > button { 
+        background-color: #00FF41 !important; 
+        color: black !important; 
+        font-weight: bold; 
+        width: 100%; 
+        border: none; 
+    }
+    .result-box { border: 1px solid #333; padding: 15px; border-radius: 5px; background-color: #111; margin-top: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+st.title("⚡ QUANTUM SMTP VALIDATOR")
+st.write("**Architecte : Moez Thabet** | Validation d'emails B2B sans base de données")
+
+st.info("💡 **Comment ça marche ?** L'outil génère les combinaisons d'emails possibles et interroge directement le serveur de l'entreprise (Ping SMTP) pour savoir laquelle est réelle, sans envoyer de message.")
+
+# Interface utilisateur
+col1, col2 = st.columns(2)
+with col1:
+    prenom = st.text_input("👤 Prénom", placeholder="Ex: Jean").strip().lower()
+    nom = st.text_input("👤 Nom", placeholder="Ex: Dupont").strip().lower()
+with col2:
+    domaine = st.text_input("🏢 Domaine entreprise", placeholder="Ex: decathlon.com").strip().lower()
+
+def generate_patterns(p, n, d):
+    """Génère les combinaisons d'emails B2B les plus courantes"""
+    return [
+        f"{p}.{n}@{d}",
+        f"{p[0]}{n}@{d}",
+        f"{p}{n[0]}@{d}",
+        f"{p}@{d}",
+        f"{n}@{d}",
+        f"{p}_{n}@{d}"
+    ]
+
 def verify_email(email):
-    # Séparer le nom et le domaine
+    """Fait un Ping SMTP pour vérifier si l'adresse existe"""
     try:
         name, domain = email.split('@')
-    except ValueError:
-        return f"❌ Format invalide : {email}"
-
-    # 1. Trouver le serveur mail (MX Record) du domaine
-    try:
+        # 1. Chercher le serveur mail
         records = dns.resolver.resolve(domain, 'MX')
         mx_record = str(records[0].exchange)
-    except Exception:
-        return f"❌ Aucun serveur mail trouvé pour {domain}"
-
-    # 2. Ping SMTP (Simuler l'envoi pour voir si l'adresse existe)
-    try:
-        # Se connecter au serveur
+        
+        # 2. Se connecter au serveur (Timeout de 3s pour ne pas bloquer)
         server = smtplib.SMTP(timeout=3)
         server.set_debuglevel(0)
         server.connect(mx_record)
         server.helo(socket.getfqdn())
-        server.mail('hello@ton-domaine.com') # Ton adresse d'expéditeur
+        server.mail('contact@ton-domaine.com')
         
-        # Poser la question au serveur cible
+        # 3. Poser la question
         code, message = server.rcpt(str(email))
         server.quit()
-
-        # Si le serveur répond 250, l'email existe et est valide !
+        
         if code == 250:
-            return f"✅ VALIDE : {email}"
+            return True, f"✅ VALIDE : **{email}**"
         else:
-            return f"❌ Invalide (Code {code}) : {email}"
-
+            return False, f"❌ Rejeté (Code {code}) : {email}"
+            
+    except smtplib.SMTPConnectError:
+         return False, f"⚠️ Connexion SMTP bloquée (Le serveur refuse le ping) : {email}"
     except Exception as e:
-        return f"⚠️ Erreur de connexion : {email}"
+        return False, f"⚠️ Erreur ou Timeout sur : {email}"
 
-# --- Exemple d'utilisation dans ton agence ---
-# Tu as trouvé "Jean Dupont" chez "Decathlon"
-candidat_tests = [
-    "jean.dupont@decathlon.com",
-    "j.dupont@decathlon.com",
-    "jdupont@decathlon.com"
-]
-
-for test in candidat_tests:
-    resultat = verify_email(test)
-    print(resultat)
-    if "✅" in resultat:
-        break # On arrête de chercher dès qu'on a trouvé le bon !
+if st.button("LANCER LE SCAN (PING SERVEUR)"):
+    if prenom and nom and domaine:
+        with st.spinner("Analyse DNS et Ping des serveurs en cours..."):
+            emails_to_test = generate_patterns(prenom, nom, domaine)
+            
+            st.write("### 📊 Résultats du Scan :")
+            success_found = False
+            
+            # Tester chaque email généré
+            for email in emails_to_test:
+                is_valid, message = verify_email(email)
+                if is_valid:
+                    st.success(message)
+                    success_found = True
+                    break # On arrête dès qu'on trouve le bon !
+                else:
+                    st.write(message)
+            
+            if not success_found:
+                st.warning("Aucune adresse valide trouvée. Le serveur est peut-être protégé (Catch-all) ou le port de scan est bloqué par l'hébergeur.")
+    else:
+        st.error("Veuillez remplir tous les champs (Prénom, Nom, Domaine).")
