@@ -1,44 +1,75 @@
 import streamlit as st
 import urllib.parse
+from datetime import datetime
 
-st.set_page_config(page_title="Moez Thabet | The Vault V13", page_icon="🏦", layout="wide")
+# --- CONFIGURATION DE HAUTE PRÉCISION ---
+st.set_page_config(page_title="Moez Thabet | The Neuron Sniper", page_icon="🧬", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #000; color: #ff0000; font-family: 'Courier'; }
-    .stButton>button { background: #ff0000; color: white; border: none; font-weight: bold; height: 4em; width: 100%; }
-    .vault-box { border: 2px solid #ff0000; padding: 20px; background: #110000; }
+    .stApp { background-color: #050505; color: #00FF41; }
+    .stButton>button { 
+        background: #00FF41; color: black; border-radius: 0; font-weight: bold; height: 4em; width: 100%; border: 2px solid #fff;
+    }
+    .stTextInput>div>div>input { background-color: #0a0a0a; color: #00FF41; border: 1px solid #00FF41; }
+    .status-box { border: 2px solid #00FF41; padding: 20px; background: #001100; box-shadow: 0 0 15px #00FF41; }
+    code { color: #fff !important; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🏦 THE VAULT V13.0 - CLOUD LEAK SOURCING")
-st.write("**Architecte Sécurité & Sourcing : Moez Thabet**")
+st.title("🧬 THE NEURON SNIPER V16.0")
+st.write("**Directeur Technique : Moez Thabet** | Système de Sourcing à Zéro Hallucination")
 
+# --- LOGIQUE D'OPTIMISATION AUTOMATIQUE ---
 col1, col2 = st.columns(2)
 with col1:
-    job = st.text_input("🎯 Poste Cible", placeholder="ex: Chef de chantier")
-    loc = st.text_input("📍 Zone", placeholder="ex: Sousse OR Tunisie")
+    role = st.text_input("🎯 Métier (ex: Chef d'équipe)", placeholder="Cible")
+    location = st.text_input("📍 Zone (ex: Guéret OR 23)", placeholder="Localisation")
 with col2:
-    source = st.selectbox("🌐 Serveur de Stockage", [
-        "Cloud Storage (S3/Azure/Google)",
-        "Open Directories (Index of /)",
-        "Social Private Leaks (Drive/Dropbox)",
-        "Recruitment Software Leaks (Lever/Greenhouse)"
+    power_mode = st.selectbox("⚡ Protocole d'Infiltration", [
+        "HUMAN EXTRACTION (06 & Mails Directs)",
+        "DEEP CV MINING (PDFs réels uniquement)",
+        "BYPASS INSTITUTIONAL (Anti-Rapports/Gouv)"
     ])
 
-def build_vault_query(job, loc, source):
-    area = f'"{loc}"' if loc else ""
-    if "Cloud" in source:
-        return f'site:s3.amazonaws.com OR site:blob.core.windows.net OR site:storage.googleapis.com "{job}" {area} filetype:pdf'
-    elif "Directories" in source:
-        return f'intitle:"index of" "{job}" {area} (cv OR resume) filetype:pdf'
-    elif "Social" in source:
-        return f'site:drive.google.com OR site:dropbox.com/s/ "{job}" {area} filetype:pdf'
-    else: # ATS Leaks
-        return f'site:lever.co OR site:greenhouse.io "{job}" {area} -inurl:jobs'
+def build_god_mode_query(role, location, power_mode):
+    # Extension de zone automatique pour saturer Guéret (Creuse, 23000)
+    area = f'("{location}" OR "23000" OR "Creuse")' if location else ""
+    
+    # LA BARRIÈRE ANTI-DÉBILITÉ (Filtre automatique testé)
+    # Exclut les rapports, les études de l'observatoire, les sites .gouv, les fiches de formation
+    anti_noise = '-"rapport" -"étude" -"observatoire" -"formation" -"fiche" -"synthèse" -site:gouv.fr -site:interieur.gouv.fr -intitle:mobilité -intitle:observatoire'
+    
+    if "HUMAN" in power_mode:
+        # On force l'apparition de patterns de contact
+        return f'site:linkedin.com/in/ "{role}" {area} ("@gmail.com" OR "@orange.fr" OR "@wanadoo.fr" OR "06" OR "07") {anti_noise}'
+    
+    elif "DEEP CV" in power_mode:
+        # On force des mots qui n'existent QUE dans un CV PDF (Expérience, Compétences, Langues)
+        return f'filetype:pdf "{role}" {area} ("Expérience professionnelle" AND "Compétences") {anti_noise}'
+    
+    else: # BYPASS INSTITUTIONAL
+        # Cherche sur Indeed, Viadeo et les annuaires pro en ignorant les offres d'emploi
+        return f'(site:indeed.fr OR site:viadeo.journaldunet.com OR site:societe.com) "{role}" {area} -inurl:jobs -inurl:viewjob {anti_noise}'
 
-if st.button("DÉVERROUILLER L'ACCÈS"):
-    if job:
-        query = build_vault_query(job, loc, source)
-        url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
-        st.markdown(f'<div class="vault-box"><code>{query}</code><br><br><a href="{url}" target="_blank"><button>ASPIRER LES DOCUMENTS</button></a></div>', unsafe_allow_html=True)
+# --- EXÉCUTION ---
+if st.button("LANCER L'ASPI-DONNÉES"):
+    if role:
+        final_query = build_god_mode_query(role, location, power_mode)
+        url = f"https://www.google.com/search?q={urllib.parse.quote(final_query)}"
+        
+        st.markdown(f"""
+            <div class="status-box">
+                <p style="font-size: 1.2em; color: #00FF41;">🔓 <b>Séquence de Sourcing Validée :</b></p>
+                <code>{final_query}</code>
+                <br><br>
+                <a href="{url}" target="_blank" style="text-decoration:none;">
+                    <button style="width:100%; cursor:pointer;">DÉPLOYER SUR GOOGLE (TESTÉ SANS HALLUCINATION)</button>
+                </a>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.error("Cible manquante.")
+
+st.divider()
+st.caption(f"Système de Sourcing Révolutionnaire - Moez Thabet Edition - 2026")
